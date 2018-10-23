@@ -538,8 +538,16 @@
           if (obj.hasOwnProperty(p = 'ALPHABET')) {
             v = obj[p];
 
+            var containsRepeated = function(str) {
+                for (var i=0; i<str.length; i++) {
+                    if (str.slice(i+1).indexOf(str.charAt(i))>=0) {
+                        return true
+                    }
+                }
+                return false
+            }
             // Disallow if only one character, or contains '.' or a repeated character.
-            if (typeof v == 'string' && !/^.$|\.|(.).*\1/.test(v)) {
+            if (typeof v == 'string' && !/^.$|\./.test(v) && !containsRepeated(v)) {
               ALPHABET = v;
             } else {
               throw Error
@@ -1285,15 +1293,15 @@
 
     // Handle values that fail the validity test in BigNumber.
     parseNumeric = (function () {
-      var basePrefix = /^(-?)0([xbo])(?=\w[\w.]*$)/i,
+      var basePrefix = /^(-?)0([xbo])(\w[\w.]*$)/i,
         dotAfter = /^([^.]+)\.$/,
         dotBefore = /^\.([^.]+)$/,
         isInfinityOrNaN = /^-?(Infinity|NaN)$/,
-        whitespaceOrPlus = /^\s*\+(?=[\w.])|^\s+|\s+$/g;
+        whitespaceOrPlus = /^\s*\+([\w.])|^\s+|\s+$/g;
 
       return function (x, str, isNum, b) {
         var base,
-          s = isNum ? str : str.replace(whitespaceOrPlus, '');
+          s = isNum ? str : str.replace(whitespaceOrPlus, '$1');
 
         // No exception on ±Infinity or NaN.
         if (isInfinityOrNaN.test(s)) {
@@ -1302,10 +1310,10 @@
         } else {
           if (!isNum) {
 
-            // basePrefix = /^(-?)0([xbo])(?=\w[\w.]*$)/i
-            s = s.replace(basePrefix, function (m, p1, p2) {
+            // basePrefix = /^(-?)0([xbo])(\w[\w.]*$)/i
+            s = s.replace(basePrefix, function (m, p1, p2, p3) {
               base = (p2 = p2.toLowerCase()) == 'x' ? 16 : p2 == 'b' ? 2 : 8;
-              return !b || b == base ? p1 : m;
+              return !b || b == base ? p1+p3 : m;
             });
 
             if (b) {
